@@ -8,6 +8,11 @@ import copy
 TODO:
 Heading info
 
+1. Try to identify Blue and Green LEDs uniquely
+2. Store their position
+3. Instead of calculating angle, just make a vector towards green from blue
+
+
 Add arrows to visualization
 Change visualization to white background
 
@@ -36,6 +41,16 @@ class Data:
 # object (of class Data) to hold the global state of the system
 D = Data()
 
+
+class Tadro:
+    def __init__(self, time, position, heading):
+        #in either frames or milliseconds
+        self.time = time
+        self.position = position
+        
+        #angle with respect to the x axis
+        self.heading = heading
+
 #################### YOU NEED TO SET THESE! #######################
 
 #specify the filepath to the video (inside normpath!)
@@ -51,7 +66,7 @@ D.FRAME_RATE = 6
 D.AUTO_LOAD_THRESHOLDS = True
 
 #do you want to see the Tadro video as it is processed?
-D.USE_GUI = True
+D.USE_GUI = False
 
 #save the data to a file
 D.SAVE_POSNS = True
@@ -238,11 +253,11 @@ def load_thresholds(path="./thresh.txt"):
             cv.setTrackbarPos(i, 'sliders', D.thresholds[i])
 
 def make_tadro_path_image():
-    D.tadro_image = np.zeros(D.size)
+    D.tadro_image = np.ones(D.size)
     col = np.array([0,0,0])
     counter = 0
     for i, x in enumerate(D.tadro_data):
-
+        '''
         if (counter == 0):
             col = np.array([255, 255, x[0]%256], copy=True)
         elif(counter == 1):
@@ -253,17 +268,22 @@ def make_tadro_path_image():
         if (x[0]%256 == 0):
                 counter += 1
                 counter = counter%3
+        '''
+
+        if (counter == 0):
+            col = np.array([255, 255, i%256], copy=True)
+        elif(counter == 1):
+            col = np.array([i%256, 255, 255], copy=True)
+        elif(counter == 2):
+            col = np.array([255, i%256, 255], copy=True)
+            
+        if (i%256 == 0):
+                counter += 1
+                counter = counter%3
                 
-        print col
+        #print col
         cv.circle(D.tadro_image, x[1], 1, copy.copy(col))
     cv.imshow('threshold', D.tadro_image)
-'''
-def make_tadro_2():
-    RED = np.array(
-    if (col != current_col)
-        col = step_to_col(current_col)
-        cv.
-'''
 
 def extract_background():
     global D
