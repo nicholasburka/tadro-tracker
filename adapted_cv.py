@@ -6,11 +6,19 @@ import copy
 
 '''
 TODO:
-Use probabistic method to narrow out blobs
+Heading info
 
-incorporate image subtraction for better accuracy under
-light when LEDs are washed out, for movement towards overall
-Tadro recognition rather than simply LED tracking.
+Add arrows to visualization
+Change visualization to white background
+
+Convert frame numbering into numbering by timestamp
+
+
+
+TOTHINKABOUT:
+Trajectory info with the heading info
+
+Use probabistic method to narrow out blobs
 
 Cluster LED points to (blobs seperated by edge detection) to find the
 Tadro blob.
@@ -30,24 +38,36 @@ D = Data()
 
 #################### YOU NEED TO SET THESE! #######################
 
+#specify the filepath to the video (inside normpath!)
 D.VIDEO_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/GOPR0442.mp4")
 
+#the number of frames to skip to get to the beginning of the tadro's swimming
 D.NUM_FRAMES_TO_SKIP = 1000
 
+#the number of frames to skip in between each image processing iteration
+D.FRAME_RATE = 6
+
+#whether or not to use preset thresholding values
 D.AUTO_LOAD_THRESHOLDS = True
 
+#do you want to see the Tadro video as it is processed?
 D.USE_GUI = True
 
+#save the data to a file
 D.SAVE_POSNS = True
 
-D.CAMERA_CALIBRATION_SUBTRACT = True
+#whether or not to use a video of camera calibration to subtract the pool background
+D.CAMERA_CALIBRATION_SUBTRACT = False
 
+#the path to a camera calibration video (should be matched with the supplied Tadro video)
 D.CAMERA_CALIBRATION_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/Camera Calibration.mp4")
 
 D.NUM_CALIBRATION_FRAMES_TO_SKIP = 500
 
+#Use adaptive thresholding to reduce image noise
 D.ADAPTIVE_THRESHOLD = True
 
+#this doesn't work
 D.BACKGROUND_EXTRACTION = False
 
 #D.START_POS_BOUNDING_BOX = [(
@@ -65,7 +85,7 @@ def init_globals():
     # get D so that we can change values in it
     global D
 
-    D.tadro_posns = []
+    D.tadro_data = []
 
     # put threshold values into D
     D.thresholds =    {'low_red':0, 'high_red':255,
@@ -221,7 +241,7 @@ def make_tadro_path_image():
     D.tadro_image = np.zeros(D.size)
     col = np.array([0,0,0])
     counter = 0
-    for i, x in enumerate(D.tadro_posns):
+    for i, x in enumerate(D.tadro_data):
 
         if (counter == 0):
             col = np.array([255, 255, x[0]%256], copy=True)
@@ -522,7 +542,7 @@ def check_key_press(key_press):
         load_thresholds()
     elif key_press == ord('s'):
         print "saving position data to posns.txt..."
-        x = D.tadro_posns
+        x = D.tadro_data
         f = open( "./posns.txt", "w" ) # open the file "thresh.txt" for writing
         print >> f, x # print x to the file object f
         f.close() # it's good to close the file afterwards
@@ -633,48 +653,61 @@ def main():
 
     # Initialize all the global variables we will need
     init_globals()
-    print "working"
+    print "working..."
 
+    #get the video file
     cap = cv.VideoCapture(D.VIDEO_PATH)
+
+    #make sure the video file is valid
     print D.VIDEO_PATH + " is an accessible video filepath?"
     if (not cap.isOpened()):
         raise NameError("Invalid video filepath.")
     else:
-        print "Video path exists."
+        print "TRUE"
 
     if (D.BACKGROUND_EXTRACTION):
         extract_background()
     
     if (D.AUTO_LOAD_THRESHOLDS):
         load_thresholds()
-        
+
+    #skip D.NUM_FRAMES_TO_SKIP
     for i in range(0, D.NUM_FRAMES_TO_SKIP):
         cap.grab()
     j = D.NUM_FRAMES_TO_SKIP
     
     while(cap.isOpened()):
+        #get the current frame
         ret, frame = cap.read()
-
 
         if (D.BACKGROUND_EXTRACTION):
             frame = D.background_extractor.apply(frame)
 
-
-        
+        #process the image
         D.orig_image = frame
         handle_image()
+
+        #store the data
         if (D.tadro_center != None):
-            D.tadro_posns.append((j, D.tadro_center))
-        
+            D.tadro_data.append((j, D.tadro_center))
+
+        #quit if told to quit
         if cv.waitKey(1) & 0xFF == ord('q'):
             break
-        j += 1
+
+        #skip FRAME_RATE number of frames
+        for i in range(0, D.FRAME_RATE):
+            cap.grab()
+
+        #increment the frame counter
+        j += 1 + D.FRAME_RATE
 
     make_tadro_path_image() #make an image displaying Tadro path
-    '''while(True):
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break'''
+
+    #save the image in the current directory
     cv.imwrite("./path_image.png", D.tadro_image)
+
+    #clean up
     cap.release()
     cv.destroyAllWindows()
 
