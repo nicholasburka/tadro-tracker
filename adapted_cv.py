@@ -53,6 +53,9 @@ class Tadro:
 
 #################### YOU NEED TO SET THESE! #######################
 
+D.GREEN = 0
+D.BLUE = 1
+
 #specify the filepath to the video (inside normpath!)
 D.VIDEO_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/GOPR0442.mp4")
 
@@ -63,10 +66,10 @@ D.NUM_FRAMES_TO_SKIP = 1000
 D.FRAME_RATE = 6
 
 #whether or not to use preset thresholding values
-D.AUTO_LOAD_THRESHOLDS = True
+D.AUTO_LOAD_THRESHOLDS = False
 
-#do you want to see the Tadro video as it is processed?
-D.USE_GUI = False
+#do you want to see the Tadro video (Graphical User Interface) as it is processed?
+D.USE_GUI = True
 
 #save the data to a file
 D.SAVE_POSNS = True
@@ -80,7 +83,7 @@ D.CAMERA_CALIBRATION_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRAN
 D.NUM_CALIBRATION_FRAMES_TO_SKIP = 500
 
 #Use adaptive thresholding to reduce image noise
-D.ADAPTIVE_THRESHOLD = True
+D.ADAPTIVE_THRESHOLD = False
 
 #this doesn't work
 D.BACKGROUND_EXTRACTION = False
@@ -102,8 +105,16 @@ def init_globals():
 
     D.tadro_data = []
 
+
     # put threshold values into D
-    D.thresholds =    {'low_red':0, 'high_red':255,
+    D.thresholds =  [{},{}]
+    D.thresholds[D.GREEN] =  {'low_red':0, 'high_red':255,
+                       'low_green':0, 'high_green':255,
+                       'low_blue':0, 'high_blue':255,
+                       'low_hue':0, 'high_hue':255,
+                       'low_sat':0, 'high_sat':255,
+                       'low_val':0, 'high_val':255 }
+    D.thresholds[D.BLUE] =  {'low_red':0, 'high_red':255,
                        'low_green':0, 'high_green':255,
                        'low_blue':0, 'high_blue':255,
                        'low_hue':0, 'high_hue':255,
@@ -116,37 +127,93 @@ def init_globals():
         cv.namedWindow('image')
         cv.moveWindow('image', 0, 0)
 
-        cv.namedWindow('threshold')
-        THR_WIND_OFFSET = 640
-        if D.half_size: THR_WIND_OFFSET /= 2
-        cv.moveWindow('threshold', THR_WIND_OFFSET, 0)
+        for i in range(len(D.thresholds)):
+            print i
 
-        cv.namedWindow('sliders')
-        SLD_WIND_OFFSET = 1280
-        if D.half_size: SLD_WIND_OFFSET /= 2
-        cv.moveWindow('sliders', SLD_WIND_OFFSET, 0)
-        cv.resizeWindow('sliders',400,600)
-    
+            cv.namedWindow('threshold%d' % i)
+            THR_WIND_OFFSET = 640
+            if D.half_size: THR_WIND_OFFSET /= 2
+            cv.moveWindow('threshold%d' % i, THR_WIND_OFFSET, 0)
 
-        # Create the sliders within the 'sliders' window
-        cv.createTrackbar('low_red', 'sliders', D.thresholds['low_red'], 255, 
-                              lambda x: change_slider('low_red', x) )
-        cv.createTrackbar('high_red', 'sliders', D.thresholds['high_red'], 255, 
-                              lambda x: change_slider('high_red', x) )
-        cv.createTrackbar('low_green', 'sliders', D.thresholds['low_green'], 255, 
-                              lambda x: change_slider('low_green', x) )
-        cv.createTrackbar('high_green', 'sliders', D.thresholds['high_green'], 255, 
-                              lambda x: change_slider('high_green', x) )
-        cv.createTrackbar('low_blue', 'sliders', D.thresholds['low_blue'], 255, 
-                              lambda x: change_slider('low_blue', x) )
-        cv.createTrackbar('high_blue', 'sliders', D.thresholds['high_blue'], 255, 
-                              lambda x: change_slider('high_blue', x) )
-        cv.createTrackbar('low_sat', 'sliders', D.thresholds['low_sat'], 255, lambda x: change_slider('low_sat', x))
-        cv.createTrackbar('high_sat', 'sliders', D.thresholds['high_sat'], 255, lambda x: change_slider('high_sat', x))
-        cv.createTrackbar('low_hue', 'sliders', D.thresholds['low_hue'], 255, lambda x: change_slider('low_hue', x))
-        cv.createTrackbar('high_hue', 'sliders', D.thresholds['high_hue'], 255, lambda x: change_slider('high_hue', x))
-        cv.createTrackbar('low_val', 'sliders', D.thresholds['low_val'], 255, lambda x: change_slider('low_val', x))
-        cv.createTrackbar('high_val', 'sliders', D.thresholds['high_val'], 255, lambda x: change_slider('high_val', x))
+            cv.namedWindow('sliders%d' % i)
+            SLD_WIND_OFFSET = 1280
+            if D.half_size: SLD_WIND_OFFSET /= 2
+            cv.moveWindow('sliders%d' % i, SLD_WIND_OFFSET, 0)
+            cv.resizeWindow('sliders%d' % i,400,600)
+
+            '''
+            lowred = 'low_red%d' % i
+            highred = 'high_red%d' % i
+            lowgreen = 'low_green%d' % i
+            highgreen = 'high_green%d' % i
+            lowblue = 'low_blue%d' % i
+            highblue = 'high_blue%d' % i
+            lowsat = 'low_sat%d' % i
+            highsat = 'high_sat%d' % i
+            lowhue = 'low_hue%d' % i
+            highhue = 'high_hue%d' % i
+            lowval = 'low_val%d' % i
+            highval = 'high_val%d' % i
+
+            list_of_params = [lowred, highred, lowgreen, highgreen, lowblue, highblue, lowsat, highsat, lowhue, highhue, lowval, highval]
+
+            for j in range(len(list_of_params)):
+                print list_of_params[j]
+                print list_of_params[j][:-1]
+                cv.createTrackbar(list_of_params[j], 'sliders%d' % i, D.thresholds[i][list_of_params[j][:-1]], 255, lambda x: change_slider(list_of_params[j][:-1], x))
+            '''
+
+        cv.createTrackbar('low_red', 'sliders%d' % 0, D.thresholds[0]['low_red'], 255, 
+                              lambda x: change_slider(0, 'low_red', x) )
+        cv.createTrackbar('high_red', 'sliders%d' % 0, D.thresholds[0]['high_red'], 255, 
+                              lambda x: change_slider(0, 'high_red', x) )
+        cv.createTrackbar('low_green', 'sliders%d' % 0, D.thresholds[0]['low_green'], 255, 
+                              lambda x: change_slider(0, 'low_green', x) )
+        cv.createTrackbar('high_green', 'sliders%d' % 0, D.thresholds[0]['high_green'], 255, 
+                              lambda x: change_slider(0, 'high_green', x) )
+        cv.createTrackbar('low_blue', 'sliders%d' % 0, D.thresholds[0]['low_blue'], 255, 
+                              lambda x: change_slider(0,'low_blue', x) )
+        cv.createTrackbar('high_blue', 'sliders%d' % 0, D.thresholds[0]['high_blue'], 255, 
+                              lambda x: change_slider(0,'high_blue', x) )
+        cv.createTrackbar('low_sat', 'sliders%d' % 0, D.thresholds[0]['low_sat'], 255, 
+                              lambda x: change_slider(0,'low_sat', x))
+        cv.createTrackbar('high_sat', 'sliders%d' % 0, D.thresholds[0]['high_sat'], 255, 
+                              lambda x: change_slider(0,'high_sat', x))
+        cv.createTrackbar('low_hue', 'sliders%d' % 0, D.thresholds[0]['low_hue'], 255, 
+                              lambda x: change_slider(0,'low_hue', x))
+        cv.createTrackbar('high_hue', 'sliders%d' % 0, D.thresholds[0]['high_hue'], 255, 
+                              lambda x: change_slider(0,'high_hue', x))
+        cv.createTrackbar('low_val', 'sliders%d' % 0, D.thresholds[0]['low_val'], 255, 
+                              lambda x: change_slider(0,'low_val', x))
+        cv.createTrackbar('high_val', 'sliders%d' % 0, D.thresholds[0]['high_val'], 255, 
+                              lambda x: change_slider(0,'high_val', x))
+
+        cv.createTrackbar('low_red', 'sliders%d' % 1, D.thresholds[1]['low_red'], 255, 
+                              lambda x: change_slider(1, 'low_red', x) )
+        cv.createTrackbar('high_red', 'sliders%d' % 1, D.thresholds[1]['high_red'], 255, 
+                              lambda x: change_slider(1, 'high_red', x) )
+        cv.createTrackbar('low_green', 'sliders%d' % 1, D.thresholds[1]['low_green'], 255, 
+                              lambda x: change_slider(1, 'low_green', x) )
+        cv.createTrackbar('high_green', 'sliders%d' % 1, D.thresholds[1]['high_green'], 255, 
+                              lambda x: change_slider(1, 'high_green', x) )
+        cv.createTrackbar('low_blue', 'sliders%d' % 1, D.thresholds[1]['low_blue'], 255, 
+                              lambda x: change_slider(1,'low_blue', x) )
+        cv.createTrackbar('high_blue', 'sliders%d' % 1, D.thresholds[1]['high_blue'], 255, 
+                              lambda x: change_slider(1,'high_blue', x) )
+        cv.createTrackbar('low_sat', 'sliders%d' % 1, D.thresholds[1]['low_sat'], 255, 
+                              lambda x: change_slider(1,'low_sat', x))
+        cv.createTrackbar('high_sat', 'sliders%d' % 1, D.thresholds[1]['high_sat'], 255, 
+                              lambda x: change_slider(1,'high_sat', x))
+        cv.createTrackbar('low_hue', 'sliders%d' % 1, D.thresholds[1]['low_hue'], 255, 
+                              lambda x: change_slider(1,'low_hue', x))
+        cv.createTrackbar('high_hue', 'sliders%d' % 1, D.thresholds[1]['high_hue'], 255, 
+                              lambda x: change_slider(1,'high_hue', x))
+        cv.createTrackbar('low_val', 'sliders%d' % 1, D.thresholds[1]['low_val'], 255, 
+                              lambda x: change_slider(1,'low_val', x))
+        cv.createTrackbar('high_val', 'sliders%d' % 1, D.thresholds[1]['high_val'], 255, 
+                              lambda x: change_slider(1,'high_val', x))
+
+
     else:
         cv.namedWindow('buttonPresses')
     # Set the method to handle mouse button presses
@@ -195,7 +262,9 @@ def init_images():
     
 
     # The final thresholded result
-    D.threshed_image = np.eye(*D.size)
+    D.threshed_images = [np.eye(1), np.eye(1)]
+    D.threshed_images[D.GREEN] = np.eye(*D.size)
+    D.threshed_images[D.BLUE] = np.eye(*D.size)
 
     # Create an hsv image and a copy for contour-finding
     D.hsv = np.eye(*D.size)
@@ -204,7 +273,7 @@ def init_images():
 
     # bunch of keypress values
     # So we know what to show, depending on which key is pressed
-    D.key_dictionary = {ord('w'): D.threshed_image,
+    D.key_dictionary = {ord('w'): D.threshed_images,
                         ord('u'): D.red,
                         ord('i'): D.green,
                         ord('o'): D.blue,
@@ -220,7 +289,7 @@ def init_images():
                         }
 
     # set the default image for the second window
-    D.current_threshold = D.threshed_image
+    D.current_threshold = D.threshed_images
 
     # Obtain the image from the camera calibration to subtract from the captured image
     if(D.CAMERA_CALIBRATION_SUBTRACT):
@@ -248,9 +317,10 @@ def load_thresholds(path="./thresh.txt"):
 
     if (D.USE_GUI):
         # Update threshold values on actual sliders
-        for i in ['low_red', 'high_red', 'low_green', 'high_green', 'low_blue', 'high_blue',
-                      'low_hue', 'high_hue', 'low_sat', 'high_sat', 'low_val', 'high_val']:
-            cv.setTrackbarPos(i, 'sliders', D.thresholds[i])
+        for j in range(len(D.thresholds)):
+            for i in ['low_red', 'high_red', 'low_green', 'high_green', 'low_blue', 'high_blue',
+                          'low_hue', 'high_hue', 'low_sat', 'high_sat', 'low_val', 'high_val']:
+                cv.setTrackbarPos(i + j, 'sliders%d' % j, D.thresholds[i])
 
 def make_tadro_path_image():
     D.tadro_image = np.ones(D.size)
@@ -280,10 +350,11 @@ def make_tadro_path_image():
         if (i%256 == 0):
                 counter += 1
                 counter = counter%3
+
                 
         #print col
         cv.circle(D.tadro_image, x[1], 1, copy.copy(col))
-    cv.imshow('threshold', D.tadro_image)
+    cv.imshow('threshold0', D.tadro_image)
 
 def extract_background():
     global D
@@ -304,7 +375,7 @@ def extract_background():
 def threshold_image():
     """ runs the image processing in order to create a 
         black and white thresholded image out of D.image
-        into D.threshed_image.
+        into D.threshed_images.
     """
     # get D so that we can change values in it
     global D
@@ -340,30 +411,42 @@ def threshold_image():
     D.sat = D.HSVchannels[1]
     D.val = D.HSVchannels[2]
 
-    # Here is how OpenCV thresholds the images based on the slider values:
-    D.red_threshed = cv.inRange(D.red, D.thresholds["low_red"], D.thresholds["high_red"], D.red_threshed)
-    D.blue_threshed = cv.inRange(D.blue, D.thresholds["low_blue"], D.thresholds["high_blue"], D.blue_threshed)
-    D.green_threshed = cv.inRange(D.green, D.thresholds["low_green"], D.thresholds["high_green"], D.green_threshed)
-    D.hue_threshed = cv.inRange(D.hue, D.thresholds["low_hue"], D.thresholds["high_hue"], D.hue_threshed)
-    D.sat_threshed = cv.inRange(D.sat, D.thresholds["low_sat"], D.thresholds["high_sat"], D.sat_threshed)
-    D.val_threshed = cv.inRange(D.val, D.thresholds["low_val"], D.thresholds["high_val"], D.val_threshed)
+    for i in range(len(D.thresholds)):
+         # Here is how OpenCV thresholds the images based on the slider values:
+        D.red_threshed = np.eye(*D.size)
+        D.blue_threshed = np.eye(*D.size)
+        D.green_threshed = np.eye(*D.size)
+        D.hue_threshed = np.eye(*D.size)
+        D.sat_threshed = np.eye(*D.size)
+        D.val_threshed = np.eye(*D.size)
 
-    # Multiply all the thresholded images into one "output" image, D.threshed_image
-    D.threshed_image = cv.multiply(D.red_threshed, D.green_threshed, D.threshed_image)
-    D.threshed_image = cv.multiply(D.threshed_image, D.blue_threshed, D.threshed_image)
-    D.threshed_image = cv.multiply(D.threshed_image, D.hue_threshed, D.threshed_image)
-    D.threshed_image = cv.multiply(D.threshed_image, D.sat_threshed, D.threshed_image)
-    D.threshed_image = cv.multiply(D.threshed_image, D.val_threshed, D.threshed_image)
+        # Multiply all the thresholded images into one "output" image, D.threshed_images
+        D.threshed_images[i] = np.eye(*D.size)
 
-    if(D.ADAPTIVE_THRESHOLD):
-        D.threshed_image = cv.multiply(D.threshed_image, D.adaptive_thresh, D.threshed_image)
+        # Here is how OpenCV thresholds the images based on the slider values:
+        D.red_threshed = cv.inRange(D.red, D.thresholds[i]["low_red"], D.thresholds[i]["high_red"], D.red_threshed)
+        D.blue_threshed = cv.inRange(D.blue, D.thresholds[i]["low_blue"], D.thresholds[i]["high_blue"], D.blue_threshed)
+        D.green_threshed = cv.inRange(D.green, D.thresholds[i]["low_green"], D.thresholds[i]["high_green"], D.green_threshed)
+        D.hue_threshed = cv.inRange(D.hue, D.thresholds[i]["low_hue"], D.thresholds[i]["high_hue"], D.hue_threshed)
+        D.sat_threshed = cv.inRange(D.sat, D.thresholds[i]["low_sat"], D.thresholds[i]["high_sat"], D.sat_threshed)
+        D.val_threshed = cv.inRange(D.val, D.thresholds[i]["low_val"], D.thresholds[i]["high_val"], D.val_threshed)
 
-    #D.threshed_image = cv.dilate(D.threshed_image, None, iterations=2)
+        # Multiply all the thresholded images into one "output" image, D.threshed_images
+        D.threshed_images[i] = cv.multiply(D.red_threshed, D.green_threshed, D.threshed_images[i])
+        D.threshed_images[i] = cv.multiply(D.threshed_images[i], D.blue_threshed, D.threshed_images[i])
+        D.threshed_images[i] = cv.multiply(D.threshed_images[i], D.hue_threshed, D.threshed_images[i])
+        D.threshed_images[i] = cv.multiply(D.threshed_images[i], D.sat_threshed, D.threshed_images[i])
+        D.threshed_images[i] = cv.multiply(D.threshed_images[i], D.val_threshed, D.threshed_images[i])
 
-    #cv.imshow(D.threshed_image)
+        if(D.ADAPTIVE_THRESHOLD):
+            D.threshed_images[i] = cv.multiply(D.threshed_images[i], D.adaptive_thresh, D.threshed_images[i])
+
+    #D.threshed_images = cv.dilate(D.threshed_images, None, iterations=2)
+
+    #cv.imshow(D.threshed_images)
     # Erode and Dilate shave off and add edge pixels respectively
-    #cv.Erode(D.threshed_image, D.threshed_image, iterations = 1)
-    #cv.Dilate(D.threshed_image, D.threshed_image, iterations = 1)
+    #cv.Erode(D.threshed_images, D.threshed_images, iterations = 1)
+    #cv.Dilate(D.threshed_images, D.threshed_images, iterations = 1)
 
 def are_these_leds(x1, y1, x2, y2):
     #to be improved later, this is just a simple heuristic that says the LEDs will
@@ -388,104 +471,105 @@ def find_biggest_region():
     # get D so that we can change values in it
     global D
 
-    # Create a copy image of thresholds then find contours on that image
-    D.copy = D.threshed_image.copy() # copy threshed image
-    #D.gray_copy = cv.cvtColor(D.copy, cv.COLOR_BGR2GRAY)
-    #D.binary_img = cv.threshold(D.gray_copy, 
-    
+    # initialize list of LED posns to len of thresholds
+    LEDs = [0 for k in range(len(D.thresholds))]
 
-    # this is OpenCV's call to find all of the contours:
-    _, contours, _ = cv.findContours(D.copy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    #print type(contours)
-    # Next we want to find the *largest* contour
-    # this is the standard algorithm:
-    #    walk the list of all contours, remembering the biggest so far:
-    if len(contours) > 0:
-        biggest = contours[0]
-        second_biggest = contours[0]
-        biggestArea = cv.contourArea(contours[0]) #get first contour
-        secondArea = cv.contourArea(contours[0])
-        for x in contours:
-            nextArea = cv.contourArea(x)
-            if biggestArea < nextArea:
-                second_biggest = biggest
-                biggest = x
-                secondArea = biggestArea
-                biggestArea = nextArea
-                #print biggest
-                #print second_biggest
-                #print "."
+    for i in range(len(D.threshed_images)):
+        # Create a copy image of thresholds then find contours on that image
+        D.copy = D.threshed_images[i].copy() # copy threshed image
+
         
-        # Use OpenCV to get a bounding rectangle for the largest contour
-        br = cv.boundingRect(biggest)
 
-        # print the result of the cv.BoundingRect call...
-        #print "br is", br
-        #print biggestArea
-        #print secondArea
+        # this is OpenCV's call to find all of the contours:
+        _, contours, _ = cv.findContours(D.copy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-        # Draw a red box from (42,42) to (84,126), for now (you'll change this):
-        upper_left = (br[0], br[1])
-        lower_left = (br[0], br[1] + br[3])
-        lower_right = (br[0] + br[2], br[1] + br[3])
-        upper_right = (br[0] + br[2], br[1])
-        cv.polylines(D.image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
-                    1, np.array([255, 0, 0]))
-        cv.polylines(D.threshed_image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
-                    1, np.array([255, 0, 0]))
+        # Next we want to find the *largest* contour
+        # this is the standard algorithm:
+        #    walk the list of all contours, remembering the biggest so far:
+        if len(contours) > 0:
+            biggest = contours[0]
+            second_biggest = contours[0]
+            biggestArea = cv.contourArea(contours[0]) #get first contour
+            secondArea = cv.contourArea(contours[0])
+            for x in contours:
+                nextArea = cv.contourArea(x)
+                if biggestArea < nextArea:
+                    second_biggest = biggest
+                    biggest = x
+                    secondArea = biggestArea
+                    biggestArea = nextArea
 
-        br2 = cv.boundingRect(second_biggest)
-        upper_left = (br2[0], br2[1])
-        lower_left = (br2[0], br2[1] + br2[3])
-        lower_right = (br2[0] + br2[2], br2[1] + br2[3])
-        upper_right = (br2[0] + br2[2], br2[1])
-        cv.polylines(D.image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
-                    1, np.array([255, 0, 0]))
-        cv.polylines(D.threshed_image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
-                    1, np.array([255, 0, 0]))
-
-        # Draw the circle, at the image center for now (you'll change this)
-
-        #print biggest
-        #print second_biggest
-        #calculate moments for biggest and second biggest blobs
-        biggest_moment = cv.moments(biggest)
-        second_moment = cv.moments(second_biggest)
-
-
-        #if these blobs have areas > 0, then calculate the average of their centroids
-        if (biggest_moment['m00'] > 0 and second_moment['m00'] > 0):
-            center_x = biggest_moment['m10']/biggest_moment['m00']
-            center_y = biggest_moment['m01']/biggest_moment['m00']
-
-            second_center_x = second_moment['m10']/second_moment['m00']
-            second_center_y = second_moment['m01']/second_moment['m00']
-
-            led_check = are_these_leds(center_x, center_y, second_center_x, second_center_y)
-
-            if (led_check):
-                D.tadro_center = (int((center_x + second_center_x)/2), int((center_y + second_center_y)/2))
-                cv.circle(D.image, D.tadro_center, 10, np.array([255, 255, 0]))
-                cv.circle(D.threshed_image, D.tadro_center, 10, np.array([255, 255, 0]))
-            else:
-                D.tadro_center = None
-                center = (br[0] + br[2]/2, br[1] + br[3]/2)
-                cv.circle(D.image, center, 10, np.array([255, 255, 0]))
-                cv.circle(D.threshed_image, center, 10, np.array([255, 255, 0]))
-                
             
-        #else simply calculate the centroid of the largest blob
+            # Use OpenCV to get a bounding rectangle for the largest contour
+            br = cv.boundingRect(biggest)
+
+            # Draw a red box from (42,42) to (84,126), for now (you'll change this):
+            upper_left = (br[0], br[1])
+            lower_left = (br[0], br[1] + br[3])
+            lower_right = (br[0] + br[2], br[1] + br[3])
+            upper_right = (br[0] + br[2], br[1])
+            cv.polylines(D.image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
+                        1, np.array([255, 0, 0]))
+            cv.polylines(D.threshed_images[i], [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
+                        1, np.array([255, 0, 0]))
+
+            br2 = cv.boundingRect(second_biggest)
+            upper_left = (br2[0], br2[1])
+            lower_left = (br2[0], br2[1] + br2[3])
+            lower_right = (br2[0] + br2[2], br2[1] + br2[3])
+            upper_right = (br2[0] + br2[2], br2[1])
+            cv.polylines(D.image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
+                        1, np.array([255, 0, 0]))
+            cv.polylines(D.threshed_images[i], [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
+                        1, np.array([255, 0, 0]))
+
+            # Draw the circle, at the image center for now (you'll change this)
+            LEDs[i] = biggest
+
+    #print biggest
+    #print second_biggest
+    #calculate moments for biggest and second biggest blobs
+    moment0 = cv.moments(LEDs[0])
+    moment1 = cv.moments(LEDs[1])
+
+
+    #if these blobs have areas > 0, then calculate the average of their centroids
+    if (moment0['m00'] > 0 and moment1['m00'] > 0):
+        center_x = moment0['m10']/moment0['m00']
+        center_y = moment0['m01']/moment0['m00']
+
+        second_center_x = moment1['m10']/moment1['m00']
+        second_center_y = moment1['m01']/moment1['m00']
+
+        led_check = are_these_leds(center_x, center_y, second_center_x, second_center_y)
+
+        if (led_check):
+            D.tadro_center = (int((center_x + second_center_x)/2), int((center_y + second_center_y)/2))
+            cv.circle(D.image, D.tadro_center, 10, np.array([255, 255, 0]))
+            cv.circle(D.threshed_images[0], D.tadro_center, 10, np.array([255, 255, 0]))
         else:
             D.tadro_center = None
+            '''
             center = (br[0] + br[2]/2, br[1] + br[3]/2)
             cv.circle(D.image, center, 10, np.array([255, 255, 0]))
-            cv.circle(D.threshed_image, center, 10, np.array([255, 255, 0]))
+            cv.circle(D.threshed_images, center, 10, np.array([255, 255, 0]))
+            '''
             
+        
+    #else simply calculate the centroid of the largest blob
+    else:
+        D.tadro_center = None
+        '''
+        center = (br[0] + br[2]/2, br[1] + br[3]/2)
+        cv.circle(D.image, center, 10, np.array([255, 255, 0]))
+        cv.circle(D.threshed_images, center, 10, np.array([255, 255, 0]))
+        '''
+        
 
-        # Draw matching contours in white with inner ones in green
-        # cv.DrawContours(D.image, biggest, cv.RGB(255, 255, 255), 
-        #               cv.RGB(0, 255, 0), 1, thickness=2, lineType=8, 
-        #               offset=(0,0))
+    # Draw matching contours in white with inner ones in green
+    # cv.DrawContours(D.image, biggest, cv.RGB(255, 255, 255), 
+    #               cv.RGB(0, 255, 0), 1, thickness=2, lineType=8, 
+    #               offset=(0,0))
 
 
 ################# END IMAGE PROCESSING FUNCTIONS ###################
@@ -574,11 +658,12 @@ def check_key_press(key_press):
 
 
 # Function for changing the slider values
-def change_slider(name, new_threshold):
+def change_slider(i, name, new_threshold):
     """ a small function to change a slider value """
     # get D so that we can change values in it
     global D
-    D.thresholds[name] = new_threshold
+    print name
+    D.thresholds[i][name] = new_threshold
 
 
 #get image, threshold, and analyze for Tadro
@@ -627,7 +712,8 @@ def handle_image():
         cv.imshow('image', D.image)
 
         # Currently selected threshold image:
-        cv.imshow('threshold', D.threshed_image)#D.current_threshold )
+        for i in range(len(D.threshed_images)):
+            cv.imshow('threshold%d' % i, D.threshed_images[i])#D.current_threshold )
 
 
 
