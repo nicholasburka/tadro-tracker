@@ -8,15 +8,15 @@ import copy
 TODO:
 Heading info
 
-1. Try to identify Blue and Green LEDs uniquely
-2. Store their position
-3. Instead of calculating angle, just make a vector towards green from blue
+1. Try to identify Blue and Green LEDs uniquely [x]
+2. Store their position [ ]
+3. Make a vector towards green from blue [ ]
 
 
-Add arrows to visualization
-Change visualization to white background
+Add arrows to visualization [ ]
+Change visualization to white background [ ]
 
-Convert frame numbering into numbering by timestamp
+Convert frame numbering into numbering by timestamp [ ]
 
 
 
@@ -140,28 +140,6 @@ def init_globals():
             if D.half_size: SLD_WIND_OFFSET /= 2
             cv.moveWindow('sliders%d' % i, SLD_WIND_OFFSET, 0)
             cv.resizeWindow('sliders%d' % i,400,600)
-
-            '''
-            lowred = 'low_red%d' % i
-            highred = 'high_red%d' % i
-            lowgreen = 'low_green%d' % i
-            highgreen = 'high_green%d' % i
-            lowblue = 'low_blue%d' % i
-            highblue = 'high_blue%d' % i
-            lowsat = 'low_sat%d' % i
-            highsat = 'high_sat%d' % i
-            lowhue = 'low_hue%d' % i
-            highhue = 'high_hue%d' % i
-            lowval = 'low_val%d' % i
-            highval = 'high_val%d' % i
-
-            list_of_params = [lowred, highred, lowgreen, highgreen, lowblue, highblue, lowsat, highsat, lowhue, highhue, lowval, highval]
-
-            for j in range(len(list_of_params)):
-                print list_of_params[j]
-                print list_of_params[j][:-1]
-                cv.createTrackbar(list_of_params[j], 'sliders%d' % i, D.thresholds[i][list_of_params[j][:-1]], 255, lambda x: change_slider(list_of_params[j][:-1], x))
-            '''
 
         cv.createTrackbar('low_red', 'sliders%d' % 0, D.thresholds[0]['low_red'], 255, 
                               lambda x: change_slider(0, 'low_red', x) )
@@ -513,16 +491,6 @@ def find_biggest_region():
             cv.polylines(D.threshed_images[i], [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
                         1, np.array([255, 0, 0]))
 
-            br2 = cv.boundingRect(second_biggest)
-            upper_left = (br2[0], br2[1])
-            lower_left = (br2[0], br2[1] + br2[3])
-            lower_right = (br2[0] + br2[2], br2[1] + br2[3])
-            upper_right = (br2[0] + br2[2], br2[1])
-            cv.polylines(D.image, [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
-                        1, np.array([255, 0, 0]))
-            cv.polylines(D.threshed_images[i], [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
-                        1, np.array([255, 0, 0]))
-
             # Draw the circle, at the image center for now (you'll change this)
             LEDs[i] = biggest
 
@@ -549,22 +517,10 @@ def find_biggest_region():
             cv.circle(D.threshed_images[0], D.tadro_center, 10, np.array([255, 255, 0]))
         else:
             D.tadro_center = None
-            '''
-            center = (br[0] + br[2]/2, br[1] + br[3]/2)
-            cv.circle(D.image, center, 10, np.array([255, 255, 0]))
-            cv.circle(D.threshed_images, center, 10, np.array([255, 255, 0]))
-            '''
-            
         
     #else simply calculate the centroid of the largest blob
     else:
         D.tadro_center = None
-        '''
-        center = (br[0] + br[2]/2, br[1] + br[3]/2)
-        cv.circle(D.image, center, 10, np.array([255, 255, 0]))
-        cv.circle(D.threshed_images, center, 10, np.array([255, 255, 0]))
-        '''
-        
 
     # Draw matching contours in white with inner ones in green
     # cv.DrawContours(D.image, biggest, cv.RGB(255, 255, 255), 
@@ -728,23 +684,6 @@ def handle_kinect_data(data):
 
     # now, handle that image...
     handle_image()
-    
-
-'''
-def handle_camera_data(data):
-    """ this function grabs images from a webcamera
-    """
-    # get D so that we can change values in it
-    global D
-
-    while rospy.is_shutdown() == False:
-
-        # Get the incoming image from the missle launcher or other camera
-        D.orig_image = cv.QueryFrame(D.camera)
-
-        # now, handle that image...
-        handle_image()
-'''
 
 ##################### END CALLBACK FUNCTIONS #######################
 
