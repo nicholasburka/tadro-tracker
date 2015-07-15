@@ -63,10 +63,10 @@ D.VIDEO_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Track
 D.NUM_FRAMES_TO_SKIP = 1000
 
 #the number of frames to skip in between each image processing iteration
-D.FRAME_RATE = 6
+D.FRAME_RATE = 1
 
-#whether or not to use preset thresholding values
-D.AUTO_LOAD_THRESHOLDS = False
+#whether or not to use preset thresholding values from thresh.txt
+D.AUTO_LOAD_THRESHOLDS = True
 
 #do you want to see the Tadro video (Graphical User Interface) as it is processed?
 D.USE_GUI = True
@@ -75,7 +75,7 @@ D.USE_GUI = True
 D.SAVE_POSNS = True
 
 #whether or not to use a video of camera calibration to subtract the pool background
-D.CAMERA_CALIBRATION_SUBTRACT = False
+D.CAMERA_CALIBRATION_SUBTRACT = True
 
 #the path to a camera calibration video (should be matched with the supplied Tadro video)
 D.CAMERA_CALIBRATION_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/Camera Calibration.mp4")
@@ -296,15 +296,19 @@ def load_thresholds(path="./thresh.txt"):
     if (D.USE_GUI):
         # Update threshold values on actual sliders
         for j in range(len(D.thresholds)):
-            for i in ['low_red', 'high_red', 'low_green', 'high_green', 'low_blue', 'high_blue',
-                          'low_hue', 'high_hue', 'low_sat', 'high_sat', 'low_val', 'high_val']:
-                cv.setTrackbarPos(i + j, 'sliders%d' % j, D.thresholds[i])
+            for i, x in enumerate(['low_red', 'high_red', 'low_green', 'high_green', 'low_blue', 'high_blue',
+                          'low_hue', 'high_hue', 'low_sat', 'high_sat', 'low_val', 'high_val']):
+                print D.thresholds[j][x]
+                print 'sliders%d' % j
+                cv.setTrackbarPos(x + str(j), 'sliders%d' % j, D.thresholds[j][x])
 
 def make_tadro_path_image():
-    D.tadro_image = np.ones(D.size)
+    D.tadro_image = np.zeros(D.size)
     col = np.array([0,0,0])
     counter = 0
     for i, x in enumerate(D.tadro_data):
+        if (x[1] == None):
+            continue
         '''
         if (counter == 0):
             col = np.array([255, 255, x[0]%256], copy=True)
@@ -442,7 +446,7 @@ def are_these_leds(x1, y1, x2, y2):
     
 
 
-def find_biggest_region():
+def find_leds():
     """ finds all the contours in threshed image, finds the largest of those,
         and then marks in in the main image
     """
@@ -481,7 +485,7 @@ def find_biggest_region():
             # Use OpenCV to get a bounding rectangle for the largest contour
             br = cv.boundingRect(biggest)
 
-            # Draw a red box from (42,42) to (84,126), for now (you'll change this):
+            # Make a bounding box around the biggest blob
             upper_left = (br[0], br[1])
             lower_left = (br[0], br[1] + br[3])
             lower_right = (br[0] + br[2], br[1] + br[3])
@@ -491,7 +495,7 @@ def find_biggest_region():
             cv.polylines(D.threshed_images[i], [np.array([upper_left,lower_left,lower_right,upper_right], dtype=np.int32)],
                         1, np.array([255, 0, 0]))
 
-            # Draw the circle, at the image center for now (you'll change this)
+            #Store the contour info for the biggest blob, which we assume is the LED based on thresholding
             LEDs[i] = biggest
 
     #print biggest
@@ -500,14 +504,23 @@ def find_biggest_region():
     moment0 = cv.moments(LEDs[0])
     moment1 = cv.moments(LEDs[1])
 
+    if (moment0['m00'] > 0):
+        center_x = moment0['m10']/moment0['m00']
+        center_y = moment0['m01']/moment0['m00']
+        D.blue_pos = (int(center_x), int(center_y))
+    else:
+        D.blue_pos = None
+
+    if (moment1['m00'] > 0):
+        second_center_x = moment1['m10']/moment1['m00']
+        second_center_y = moment1['m01']/moment1['m00']
+        D.green_pos = (int(second_center_x), int(second_center_y))
+    else:
+        D.green_pos = None
+
 
     #if these blobs have areas > 0, then calculate the average of their centroids
     if (moment0['m00'] > 0 and moment1['m00'] > 0):
-        center_x = moment0['m10']/moment0['m00']
-        center_y = moment0['m01']/moment0['m00']
-
-        second_center_x = moment1['m10']/moment1['m00']
-        second_center_y = moment1['m01']/moment1['m00']
 
         led_check = are_these_leds(center_x, center_y, second_center_x, second_center_y)
 
@@ -643,7 +656,7 @@ def handle_image():
     # Recalculate threshold image
     threshold_image()
 
-    find_biggest_region()
+    find_leds()
     #find_tadro()
 
     ############3
@@ -733,8 +746,7 @@ def main():
         handle_image()
 
         #store the data
-        if (D.tadro_center != None):
-            D.tadro_data.append((j, D.tadro_center))
+        D.tadro_data.append((j, D.tadro_center, D.blue_pos, D.green_pos))
 
         #quit if told to quit
         if cv.waitKey(1) & 0xFF == ord('q'):
