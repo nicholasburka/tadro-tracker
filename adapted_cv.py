@@ -54,7 +54,7 @@ class Tadro:
 #################### YOU NEED TO SET THESE! #######################
 
 D.GREEN = 0
-D.BLUE = 1
+D.BLUE = 1 
 
 #specify the filepath to the video (inside normpath!)
 D.VIDEO_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/GOPR0442.mp4")
@@ -63,7 +63,7 @@ D.VIDEO_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Track
 D.NUM_FRAMES_TO_SKIP = 1000
 
 #the number of frames to skip in between each image processing iteration
-D.FRAME_RATE = 1
+D.FRAME_RATE = 120
 
 #whether or not to use preset thresholding values from thresh.txt
 D.AUTO_LOAD_THRESHOLDS = True
@@ -75,7 +75,7 @@ D.USE_GUI = True
 D.SAVE_POSNS = True
 
 #whether or not to use a video of camera calibration to subtract the pool background
-D.CAMERA_CALIBRATION_SUBTRACT = True
+D.CAMERA_CALIBRATION_SUBTRACT = False
 
 #the path to a camera calibration video (should be matched with the supplied Tadro video)
 D.CAMERA_CALIBRATION_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/Camera Calibration.mp4")
@@ -298,12 +298,14 @@ def load_thresholds(path="./thresh.txt"):
         for j in range(len(D.thresholds)):
             for i, x in enumerate(['low_red', 'high_red', 'low_green', 'high_green', 'low_blue', 'high_blue',
                           'low_hue', 'high_hue', 'low_sat', 'high_sat', 'low_val', 'high_val']):
-                print D.thresholds[j][x]
-                print 'sliders%d' % j
                 cv.setTrackbarPos(x + str(j), 'sliders%d' % j, D.thresholds[j][x])
 
 def make_tadro_path_image():
-    D.tadro_image = np.zeros(D.size)
+
+    #makes the output image produce RGBA (A for Alpha, allowing for transparent pixels)
+    #instead of just RBG like the input image. 4 channels instead of three
+    D.tadro_image_size = (D.size[0], D.size[1], 4)
+    D.tadro_image = np.zeros(D.tadro_image_size)
     col = np.array([0,0,0])
     counter = 0
     for i, x in enumerate(D.tadro_data):
@@ -323,11 +325,11 @@ def make_tadro_path_image():
         '''
 
         if (counter == 0):
-            col = np.array([255, 255, i%256], copy=True)
+            col = np.array([0, 0, i%256, 255], copy=True)
         elif(counter == 1):
-            col = np.array([i%256, 255, 255], copy=True)
+            col = np.array([i%256, 0, 0, 255], copy=True)
         elif(counter == 2):
-            col = np.array([255, i%256, 255], copy=True)
+            col = np.array([0, i%256, 0, 255], copy=True)
             
         if (i%256 == 0):
                 counter += 1
@@ -337,6 +339,46 @@ def make_tadro_path_image():
         #print col
         cv.circle(D.tadro_image, x[1], 1, copy.copy(col))
     cv.imshow('threshold0', D.tadro_image)
+
+def make_tadro_path_heading_image():
+    D.tadro_image_size = (D.size[0], D.size[1], 4)
+    D.tadro_image = np.zeros(D.tadro_image_size)
+    col = np.array([0,0,0, 255])
+    counter = 0
+    for i, x in enumerate(D.tadro_data):
+        if (x[1] == None):
+            continue
+
+        if (counter == 0):
+            col = np.array([0, 0, i%256, 255], copy=True)
+        elif(counter == 1):
+            col = np.array([i%256, 0, 0, 255], copy=True)
+        elif(counter == 2):
+            col = np.array([0, i%256, 0, 255], copy=True)
+            
+        if (i%256 == 0):
+                counter += 1
+                counter = counter%3
+
+        back = x[3]
+        front = x[2]
+        center_line = (back, front)
+        #angle of arrow in radians
+        arrow_angle = .3
+
+        #rotating the back LED about the front LED to make an arrow
+        right_shift_back_x = int(front[0] + (back[0] - front[0])*math.cos(arrow_angle) - (back[1] - front[1])*math.sin(arrow_angle))
+        right_shift_back_y = int(front[1] + (back[1] - front[1])*math.cos(arrow_angle) - (back[0] - front[0])*math.sin(arrow_angle))
+
+        left_shift_back_x = int(front[0] + (back[0] - front[0])*math.cos(-1*arrow_angle) - (back[1] - front[1])*math.sin(-1*arrow_angle))
+        left_shift_back_y = int(front[1] + (back[1] - front[1])*math.cos(-1*arrow_angle) - (back[0] - front[0])*math.sin(-1*arrow_angle))
+
+        cv.line(D.tadro_image, back, front, col, 2)
+        cv.circle(D.tadro_image, front, 3, np.array([255,0,0,255]))
+        #cv.line(D.tadro_image, (right_shift_back_x, right_shift_back_y), front, col, 2)
+        #cv.line(D.tadro_image, (left_shift_back_x, left_shift_back_y), front, col, 2)
+
+
 
 def extract_background():
     global D
@@ -659,12 +701,6 @@ def handle_image():
     find_leds()
     #find_tadro()
 
-    ############3
-    '''
-    WRITE THE ABOVE FUNCTION
-    '''
-    ################3
-
     # Get any incoming keypresses
     # To get input from keyboard, we use cv.WaitKey
     # Only the lowest eight bits matter (so we get rid of the rest):
@@ -759,7 +795,7 @@ def main():
         #increment the frame counter
         j += 1 + D.FRAME_RATE
 
-    make_tadro_path_image() #make an image displaying Tadro path
+    make_tadro_path_heading_image() #make an image displaying Tadro path
 
     #save the image in the current directory
     cv.imwrite("./path_image.png", D.tadro_image)
