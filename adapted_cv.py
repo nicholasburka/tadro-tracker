@@ -4,34 +4,6 @@ import math
 from os.path import normpath
 import copy
 
-'''
-TODO:
-Heading info
-
-1. Try to identify Blue and Green LEDs uniquely [x]
-2. Store their position [ ]
-3. Make a vector towards green from blue [ ]
-
-
-Add arrows to visualization [ ]
-Change visualization to white background [ ]
-
-Convert frame numbering into numbering by timestamp [ ]
-
-
-
-TOTHINKABOUT:
-Trajectory info with the heading info
-
-Use probabistic method to narrow out blobs
-
-Cluster LED points to (blobs seperated by edge detection) to find the
-Tadro blob.
-
-Make color switching more continuous and more colors.
-
-Incorporate skew data so output is absolute, rather than fisheye.
-'''
 ###################### GLOBAL SYSTEM STATE ########################
 
 # class for a generic data holder
@@ -51,10 +23,12 @@ class Tadro:
         #angle with respect to the x axis
         self.heading = heading
 
-#################### YOU NEED TO SET THESE! #######################
+		
 
 D.GREEN = 0
 D.BLUE = 1 
+
+#################### YOU NEED TO SET THESE! #######################
 
 #specify the filepath to the video (inside normpath!)
 D.VIDEO_PATH = normpath("C:/Users/RoboMaster/Documents/INSPIRE GRANT/Tadro Tracking/GOPR0442.mp4")
@@ -85,10 +59,8 @@ D.NUM_CALIBRATION_FRAMES_TO_SKIP = 500
 #Use adaptive thresholding to reduce image noise
 D.ADAPTIVE_THRESHOLD = False
 
-#this doesn't work
+#this doesn't work - keep False
 D.BACKGROUND_EXTRACTION = False
-
-#D.START_POS_BOUNDING_BOX = [(
 
 # do you want small windows (about 320 x 240)
 D.half_size = False
@@ -374,7 +346,7 @@ def make_tadro_path_heading_image():
         left_shift_back_y = int(front[1] + (back[1] - front[1])*math.cos(-1*arrow_angle) - (back[0] - front[0])*math.sin(-1*arrow_angle))
 
         cv.line(D.tadro_image, back, front, col, 2)
-        cv.circle(D.tadro_image, front, 3, np.array([255,0,0,255]))
+        cv.circle(D.tadro_image, front, 5, np.array([255,0,0,255]), 2)
         #cv.line(D.tadro_image, (right_shift_back_x, right_shift_back_y), front, col, 2)
         #cv.line(D.tadro_image, (left_shift_back_x, left_shift_back_y), front, col, 2)
 
